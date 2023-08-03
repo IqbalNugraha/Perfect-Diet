@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "32966899671",
+    "firebase_url": "https://perfectdiet-8631f-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "perfectdiet-8631f",
+    "storage_bucket": "perfectdiet-8631f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:32966899671:android:e194175723563c298cbd92",
+        "android_client_info": {
+          "package_name": "com.example.skiripsi_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "32966899671-et5dia3l13crev3lvoja86r4i3snvtdl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2Zn_zkSSPJ6ZLsuGhjZWN0nXs3zdQXIE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "32966899671-et5dia3l13crev3lvoja86r4i3snvtdl.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "32966899671-ql2g27ipg5qhjlvqu0a1qo5olma8ndcn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.skiripsiApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
