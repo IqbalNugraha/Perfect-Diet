@@ -46,6 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
       calDinner,
       fatDinner,
       carbDinner,
+      calSnack,
+      fatSnack,
+      carbSnack,
       indicatorLunch,
       indicatorBreakfast,
       indicatorDinner,
@@ -96,7 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ngemil = value.ngemil;
           lemak = value.fat;
           karbo = value.carb;
-          print("sarapan : $sarapan");
           Provider.of<ViewListSaved>(context, listen: false)
               .fetchListSarapan(
             widget.userId,
@@ -149,6 +151,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     ((makanMalam ?? 0) - (calDinner ?? 0)) / (makanMalam ?? 0));
 
                 indicatorDinner = ((percentDinner ?? 0) * 100).toInt();
+              }
+            });
+          });
+          Provider.of<ViewListSaved>(context, listen: false)
+              .fetchListCamilan(
+            widget.userId,
+            widget.idToken,
+          )
+              .then((value) {
+            setState(() {
+              calSnack = value.kalori;
+              if (calSnack == 0) {
+                percentSnack = 0;
+                indicatorSnack = 0;
+              } else {
+                percentSnack = (1 -
+                    ((ngemil ?? 0) - (calSnack ?? 0)) / (ngemil ?? 0));
+
+                indicatorSnack = ((percentSnack ?? 0) * 100).toInt();
               }
             });
           });

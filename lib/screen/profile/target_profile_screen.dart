@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:skiripsi_app/provider/profile/view_model/view_target_profile.dart';
 import 'package:skiripsi_app/screen/dialog/message_dialog.dart';
+import 'package:skiripsi_app/screen/profile/dialog_profile/dialog_target.dart';
 import 'package:skiripsi_app/utility/warna.dart';
 import 'package:skiripsi_app/widget/font_custom.dart';
 import 'package:skiripsi_app/widget/hitung_imt.dart';
 import 'package:skiripsi_app/widget/input_custom.dart';
+import 'package:skiripsi_app/widget/logic/logic_profile.dart';
 import 'package:skiripsi_app/widget/row_custom.dart';
 import 'package:skiripsi_app/widget/string_custom.dart';
+import 'package:skiripsi_app/screen/dialog/message_dialog.dart';
 
 class TargetProfileScreen extends StatefulWidget {
   final int dayTarget, usia;
@@ -33,6 +36,7 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
   StringCustom stringCustom = StringCustom();
   InputCustom inputCustom = InputCustom();
   FunctionIMT imt = FunctionIMT();
+  LogicProfile logicProfile = LogicProfile();
   var textDay = TextEditingController();
   var textCalories = TextEditingController();
   Color btnSave = MyColors.red();
@@ -59,10 +63,46 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
     return false;
   }
 
+  Future _showModalBottom(
+    String userId,
+    String idToken,
+    int cal,
+    double bmr,
+    int day,
+    double result,
+    int age,
+  ) async {
+    return await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(10),
+          topRight: Radius.circular(10),
+        ),
+      ),
+      backgroundColor: MyColors.white(),
+      isScrollControlled: true,
+      builder: (context) => DialogProfile(
+        userId: userId,
+        idToken: idToken,
+        cal: cal,
+        bmrCal: bmr,
+        day: day,
+        result: result,
+        age: age,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    var bmrTemp = widget.bmrKalori;
+    final kalori = logicProfile.penguranganKalori(widget.usia);
+    final resultTarget = logicProfile.hitungTarget(
+      14,
+      kalori,
+      widget.bmrKalori,
+    );
     return Scaffold(
       backgroundColor: MyColors.background(),
       body: Form(
@@ -131,7 +171,7 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
                   RowCustomTarget(
                     judul: "Pengurangan Kalori",
                     widget: FontPoppins(
-                      text: textCalories.text,
+                      text: "$kalori Kkal",
                       color: MyColors.blackFont(),
                       size: 16,
                       fontWeight: FontWeight.w400,
@@ -164,30 +204,12 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      FutureBuilder(
-                        future: Future.delayed(const Duration(seconds: 2)),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return Align(
-                              alignment: Alignment.center,
-                              child: CircularProgressIndicator(
-                                color: MyColors.red(),
-                              ),
-                            );
-                          } else {
-                            return Align(
-                              alignment: Alignment.center,
-                              child: FontPoppins(
-                                text: "${target ?? 0} Kg",
-                                color: MyColors.blackFont(),
-                                size: 16,
-                                fontWeight: FontWeight.w400,
-                                alignment: TextAlign.start,
-                              ),
-                            );
-                          }
-                        },
+                      FontPoppins(
+                        text: "${resultTarget.toStringAsFixed(2)} Kg",
+                        color: MyColors.blackFont(),
+                        size: 16,
+                        fontWeight: FontWeight.w400,
+                        alignment: TextAlign.start,
                       ),
                     ],
                   ),
@@ -199,7 +221,7 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           var kaloriDiet = imt.hitungDietKalori(
-                            bmrTemp,
+                            widget.bmrKalori,
                             double.parse(
                               textCalories.text,
                             ),
@@ -256,104 +278,14 @@ class _TargetProfileScreenState extends State<TargetProfileScreen> {
                       width: size.width,
                       child: ElevatedButton(
                         onPressed: () {
-                          showModalBottomSheet(
-                            context: context,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(10),
-                                topRight: Radius.circular(10),
-                              ),
-                            ),
-                            backgroundColor: MyColors.white(),
-                            isScrollControlled: true,
-                            builder: (context) => Container(
-                              height: 300,
-                              decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(10),
-                                  topRight: Radius.circular(10),
-                                ),
-                                color: MyColors.white(),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 16),
-                                  FontPoppins(
-                                    text: "Ubah Pengurangan Kalori",
-                                    color: MyColors.blackFont(),
-                                    size: 16,
-                                    fontWeight: FontWeight.w400,
-                                    alignment: TextAlign.center,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  RowCustomTarget(
-                                    judul: "Pengurangan Kalori",
-                                    widget: TextFormField(
-                                      controller: textCalories,
-                                      keyboardType: TextInputType.number,
-                                      maxLength: 4,
-                                      // onEditingComplete: () {
-                                      // imt
-                                      //     .hitungTargetPengguna(
-                                      //   textCalories,
-                                      //   bmrTemp,
-                                      //   context,
-                                      // )
-                                      //     .then((value) {
-                                      //   setState(() {
-                                      //     target = value;
-                                      //   });
-                                      // });
-                                      // },
-                                      decoration: inputCustom.inputProfile("0"),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Container(
-                                    width: size.width,
-                                    height: 50,
-                                    margin: const EdgeInsets.symmetric(
-                                      horizontal: 48,
-                                    ),
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        imt
-                                            .hitungTargetPengguna(
-                                          textCalories,
-                                          bmrTemp,
-                                          context,
-                                        )
-                                            .then((value) {
-                                          setState(() {
-                                            target = value;
-                                          });
-                                        });
-                                        Navigator.of(context).pop();
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: MyColors.red(),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                      child: FontPoppins(
-                                        text: "Simpan",
-                                        color: MyColors.white(),
-                                        size: 14,
-                                        fontWeight: FontWeight.w400,
-                                        alignment: TextAlign.center,
-                                      ),
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          );
+                          _showModalBottom(
+                              widget.localId,
+                              widget.idToken,
+                              widget.caloriesTarget.toInt(),
+                              widget.bmrKalori,
+                              widget.dayTarget,
+                              double.parse(widget.weightTarget),
+                              widget.usia);
                         },
                         style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),

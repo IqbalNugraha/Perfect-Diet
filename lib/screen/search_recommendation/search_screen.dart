@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:skiripsi_app/provider/profile/view_model/view_pola_makan.dart';
 import 'package:skiripsi_app/provider/profile/view_model/view_target_profile.dart';
+import 'package:skiripsi_app/provider/rekomendasi/model/rekomendasi.dart';
 import 'package:skiripsi_app/provider/rekomendasi/view_model/view_rekomendasi.dart';
 import 'package:skiripsi_app/screen/rekomendasi/rekomendasi/rekomendasi_item.dart';
 import 'package:skiripsi_app/utility/warna.dart';
@@ -28,40 +29,96 @@ class _SearchScreenState extends State<SearchScreen> {
   FunctionIMT functionIMT = FunctionIMT();
   DateTime currentBackPressTime = DateTime.now();
   StringCustom stringCustom = StringCustom();
+  List<RekomendasiBreakfast>? result;
   bool isValid = false;
-  int? maxFat, maxCarb, maxCalories;
+  bool isLoading = false;
+  String? message;
+  int? nutrisiCal,
+      nutrisiCarb,
+      nutrisiFat,
+      sarapanValue,
+      makanSiangValue,
+      makanMalamValue,
+      camilanValue,
+      carbMax,
+      fatMax;
 
   @override
   void initState() {
+    isValid = true;
+
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      Provider.of<ViewTargetProfile>(context, listen: false).fetchTarget(
+      Provider.of<ViewPolaMakan>(context, listen: false)
+          .fetchTablePolaMakan(
         widget.userId,
         widget.idToken,
-      );
-      Provider.of<ViewPolaMakan>(context, listen: false).fetchPolaMakan(
-        widget.userId,
-        widget.idToken,
-      );
-      Future.delayed(const Duration(microseconds: 500000), () {
-        Provider.of<ViewRekomendasi>(context, listen: false).fetchMainCourse(
-          maxCarb ?? 0,
-          maxFat ?? 0,
-          maxCalories ?? 0,
-        );
+      )
+          .then((value) {
+        setState(() {
+          sarapanValue = value.sarapan;
+          makanSiangValue = value.makanSiang;
+          makanMalamValue = value.makanMalam;
+          camilanValue = value.ngemil;
+          sarapanValue = value.sarapan;
+          carbMax = value.carb;
+          fatMax = value.fat;
+          Provider.of<ViewPolaMakan>(context, listen: false)
+              .fetchNutrisiPolaMakan(
+            widget.userId,
+            widget.idToken,
+          )
+              .then((value) {
+            setState(() {
+              nutrisiCal = value.cal;
+              nutrisiFat = value.fat;
+              nutrisiCarb = value.carb;
+              var recentCal = (((sarapanValue ?? 0) +
+                      (makanSiangValue ?? 0) +
+                      (makanMalamValue ?? 0)) -
+                  (nutrisiCal ?? 0));
+              var recentFat = (fatMax ?? 0) - (nutrisiFat ?? 0);
+              var recentCarb = (carbMax ?? 0) - (nutrisiCarb ?? 0);
+              Provider.of<ViewRekomendasi>(context, listen: false)
+                  .fetchMainCourse(
+                recentCarb,
+                recentFat,
+                recentCal,
+              )
+                  .then((value) {
+                setState(() {
+                  result = value.result;
+                  message = value.message;
+                  Future.delayed(const Duration(seconds: 2), () {
+                    setState(() {
+                      isLoading = false;
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
       });
     });
-    isValid = true;
     super.initState();
   }
 
   void _search(String query, int maxCarb, int maxFat, int maxCalories) {
     setState(() {
+      isLoading = true;
       Provider.of<ViewRekomendasi>(context, listen: false)
           .fetchSearch(maxCarb, maxFat, maxCalories, query)
           .then((response) {
         if (response.result!.isNotEmpty) {
           setState(() {
             isValid = false;
+            result = response.result;
+            message = response.message;
+            Future.delayed(const Duration(seconds: 2), () {
+              setState(() {
+                isLoading = false;
+              });
+            });
           });
         }
       });
@@ -71,25 +128,6 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-
-    final dataTargetProfile = Provider.of<ViewTargetProfile>(context);
-    final dataPolaMakan = Provider.of<ViewPolaMakan>(context);
-    final dataRekomendasi = Provider.of<ViewRekomendasi>(context);
-    final rekomendasi = dataRekomendasi.responseData.result;
-    final targetProfile = dataTargetProfile.targetProfile;
-    var isLoadingList = dataRekomendasi.isLoading;
-    final polaMakan = dataPolaMakan.polaMakan;
-
-    maxFat = targetProfile.fat;
-
-    maxCarb = int.parse(functionIMT.formatDouble(targetProfile.carb ?? 0, 0));
-
-    maxCalories = int.parse(
-      functionIMT.hitungPolaMakan(
-        polaMakan.makanSiang ?? 0,
-        targetProfile.caloriesDiet ?? 0,
-      ),
-    );
 
     return Scaffold(
       backgroundColor: MyColors.background(),
@@ -128,8 +166,8 @@ class _SearchScreenState extends State<SearchScreen> {
                   controller: txtSearch,
                   onChanged: (String text) {
                     Future.delayed(const Duration(seconds: 3), () {
-                      _search(
-                          text, maxCarb ?? 0, maxFat ?? 0, maxCalories ?? 0);
+                      _search(text, nutrisiCarb ?? 0, nutrisiFat ?? 0,
+                          nutrisiCal ?? 0);
                     });
                   },
                   decoration: InputDecoration(
@@ -156,11 +194,9 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Consumer3<ViewTargetProfile, ViewPolaMakan, ViewRekomendasi>(
-              builder: (context, viewTarget, viewPola, viewRekomendasi, _) {
-                if (viewTarget.state == ClassViewTarget.loading ||
-                    viewPola.state == ClassViewPola.loading ||
-                    viewRekomendasi.state == ClassViewRekomendasi.loading) {
+            Consumer<ViewRekomendasi>(
+              builder: (context, viewRekomendasi, _) {
+                if (viewRekomendasi.state == ClassViewRekomendasi.loading) {
                   return Expanded(
                     child: Center(
                       child: CircularProgressIndicator(
@@ -168,9 +204,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                   );
-                } else if (viewTarget.state == ClassViewTarget.error &&
-                    viewPola.state == ClassViewPola.error &&
-                    viewRekomendasi.state == ClassViewRekomendasi.error) {
+                } else if (viewRekomendasi.state ==
+                    ClassViewRekomendasi.error) {
                   return const Expanded(
                     child: Center(
                       child: FontPop16w400Black(
@@ -179,9 +214,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                   );
-                } else if (viewTarget.state == ClassViewTarget.empty ||
-                    viewPola.state == ClassViewPola.empty ||
-                    viewRekomendasi.state == ClassViewRekomendasi.empty) {
+                } else if (viewRekomendasi.state ==
+                    ClassViewRekomendasi.empty) {
                   return const Expanded(
                     child: Center(
                       child: FontPop16w400Black(
@@ -192,7 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   );
                 } else {
                   return isValid
-                      ? isLoadingList
+                      ? isLoading
                           ? Expanded(
                               child: Center(
                                 child: CircularProgressIndicator(
@@ -206,30 +240,44 @@ class _SearchScreenState extends State<SearchScreen> {
                                     const EdgeInsets.symmetric(horizontal: 16),
                                 child: ListView.builder(
                                   padding: EdgeInsets.zero,
-                                  itemCount: rekomendasi?.length ?? 0,
+                                  itemCount: result?.length,
                                   itemBuilder: (ctx, i) {
                                     return RekomendasiItem(
-                                      id: rekomendasi?[i].id ?? 0,
-                                      name: rekomendasi?[i].title ?? "",
-                                      img: rekomendasi?[i].image ?? "",
-                                      fat: rekomendasi![i]
-                                          .nutrition!
-                                          .nutrients![1]
-                                          .amount!,
-                                      calories: rekomendasi[i]
-                                          .nutrition!
-                                          .nutrients![0]
-                                          .amount!,
-                                      carb: rekomendasi[i]
-                                          .nutrition!
-                                          .nutrients![2]
-                                          .amount!,
+                                      id: result?[i].id ?? 0,
+                                      name: result?[i].title ?? "",
+                                      img: result?[i].image ?? "",
+                                      fat: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[1]
+                                              .amount ??
+                                          0,
+                                      calories: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[0]
+                                              .amount ??
+                                          0,
+                                      carb: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[2]
+                                              .amount ??
+                                          0,
+                                      breakfastValue: sarapanValue ?? 0,
+                                      lunchValue: makanSiangValue ?? 0,
+                                      dinnerValue: makanMalamValue ?? 0,
+                                      snackValue: camilanValue ?? 0,
+                                      carbMax: carbMax ?? 0,
+                                      fatMax: fatMax ?? 0,
+                                      nutrisiCal: nutrisiCal ?? 0,
+                                      nutrisiFat: nutrisiFat ?? 0,
+                                      nutrisiCarb: nutrisiCarb ?? 0,
+                                      idToken: widget.idToken,
+                                      userId: widget.userId,
                                     );
                                   },
                                 ),
                               ),
                             )
-                      : isLoadingList
+                      : isLoading
                           ? Expanded(
                               child: Center(
                                 child: CircularProgressIndicator(
@@ -243,25 +291,38 @@ class _SearchScreenState extends State<SearchScreen> {
                                     const EdgeInsets.symmetric(horizontal: 16),
                                 child: ListView.builder(
                                   padding: EdgeInsets.zero,
-                                  itemCount: rekomendasi?.length ?? 0,
+                                  itemCount: result?.length,
                                   itemBuilder: (ctx, i) {
-                                    
                                     return RekomendasiItem(
-                                      id: rekomendasi?[i].id ?? 0,
-                                      name: rekomendasi?[i].title ?? "",
-                                      img: rekomendasi?[i].image ?? "",
-                                      fat: rekomendasi![i]
-                                          .nutrition!
-                                          .nutrients![1]
-                                          .amount ?? 0,
-                                      calories: rekomendasi[i]
-                                          .nutrition!
-                                          .nutrients![0]
-                                          .amount ?? 0,
-                                      carb: rekomendasi[i]
-                                          .nutrition!
-                                          .nutrients![2]
-                                          .amount ?? 0,
+                                      id: result?[i].id ?? 0,
+                                      name: result?[i].title ?? "",
+                                      img: result?[i].image ?? "",
+                                      fat: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[1]
+                                              .amount ??
+                                          0,
+                                      calories: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[0]
+                                              .amount ??
+                                          0,
+                                      carb: result?[i]
+                                              .nutrition
+                                              ?.nutrients?[2]
+                                              .amount ??
+                                          0,
+                                      breakfastValue: sarapanValue ?? 0,
+                                      lunchValue: makanSiangValue ?? 0,
+                                      dinnerValue: makanMalamValue ?? 0,
+                                      snackValue: camilanValue ?? 0,
+                                      carbMax: carbMax ?? 0,
+                                      fatMax: fatMax ?? 0,
+                                      nutrisiCal: nutrisiCal ?? 0,
+                                      nutrisiFat: nutrisiFat ?? 0,
+                                      nutrisiCarb: nutrisiCarb ?? 0,
+                                      idToken: widget.idToken,
+                                      userId: widget.userId,
                                     );
                                   },
                                 ),

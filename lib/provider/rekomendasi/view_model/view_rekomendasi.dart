@@ -43,7 +43,7 @@ class ViewRekomendasi with ChangeNotifier {
       final url = Uri.parse(
         "$breakfast?apiKey=$apiKey1&type=breakfast&maxCarbs=$maxCarb&maxCalories=$maxCalories&maxFat=$maxFat&number=10",
       );
-      final response = await http.get(url);      
+      final response = await http.get(url);
       if (response.statusCode == 200) {
         changeState(ClassViewRekomendasi.loaded);
         final item = json.decode(response.body);
@@ -118,6 +118,7 @@ class ViewRekomendasi with ChangeNotifier {
       final url = Uri.parse(
         "$breakfast?apiKey=$apiKey&type=main course&maxCarbs=$maxCarb&maxCalories=$maxCalories&maxFat=$maxFat&number=10&cuisine=asian",
       );
+      print(url);
       final response = await http.get(url);
       if (response.statusCode == 200) {
         isLoading = false;

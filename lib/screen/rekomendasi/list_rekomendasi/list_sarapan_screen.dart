@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:skiripsi_app/provider/profile/view_model/view_pola_makan.dart';
 import 'package:skiripsi_app/provider/rekomendasi/model/rekomendasi.dart';
 import 'package:skiripsi_app/provider/rekomendasi/view_model/view_rekomendasi.dart';
 import 'package:skiripsi_app/screen/rekomendasi/rekomendasi/rekomendasi_item.dart';
 import 'package:skiripsi_app/utility/warna.dart';
 import 'package:skiripsi_app/widget/font_custom.dart';
-import 'package:skiripsi_app/widget/string_custom.dart';
 
 class ListSarapan extends StatefulWidget {
   final String userId, idToken;
-  final int maxCarb, maxFat, maxCalories;
   const ListSarapan({
     required this.userId,
     required this.idToken,
-    required this.maxCalories,
-    required this.maxCarb,
-    required this.maxFat,
     super.key,
   });
 
@@ -26,20 +22,63 @@ class ListSarapan extends StatefulWidget {
 class _ListSarapanState extends State<ListSarapan> {
   List<RekomendasiBreakfast>? result;
   String? message;
+  int? nutrisiCal,
+      nutrisiCarb,
+      nutrisiFat,
+      sarapanValue,
+      makanSiangValue,
+      makanMalamValue,
+      camilanValue,
+      carbMax,
+      fatMax;
 
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      Provider.of<ViewRekomendasi>(context, listen: false)
-          .fetchBreakfast(
-        widget.maxCarb,
-        widget.maxFat,
-        widget.maxCalories,
+      Provider.of<ViewPolaMakan>(context, listen: false)
+          .fetchTablePolaMakan(
+        widget.userId,
+        widget.idToken,
       )
           .then((value) {
         setState(() {
-          result = value.result;
-          message = value.message;
+          sarapanValue = value.sarapan;
+          makanSiangValue = value.makanSiang;
+          makanMalamValue = value.makanMalam;
+          camilanValue = value.ngemil;
+          sarapanValue = value.sarapan;
+          carbMax = value.carb;
+          fatMax = value.fat;
+          Provider.of<ViewPolaMakan>(context, listen: false)
+              .fetchNutrisiPolaMakan(
+            widget.userId,
+            widget.idToken,
+          )
+              .then((value) {
+            setState(() {
+              nutrisiCal = value.cal;
+              nutrisiFat = value.fat;
+              nutrisiCarb = value.carb;
+              var recentCal = (((sarapanValue ?? 0) +
+                      (makanSiangValue ?? 0) +
+                      (makanMalamValue ?? 0)) -
+                  (nutrisiCal ?? 0));
+              var recentFat = (fatMax ?? 0) - (nutrisiFat ?? 0);
+              var recentCarb = (carbMax ?? 0) - (nutrisiCarb ?? 0);
+              Provider.of<ViewRekomendasi>(context, listen: false)
+                  .fetchBreakfast(
+                recentCarb,
+                recentFat,
+                recentCal,
+              )
+                  .then((value) {
+                setState(() {
+                  result = value.result;
+                  message = value.message;
+                });
+              });
+            });
+          });
         });
       });
     });
@@ -119,6 +158,17 @@ class _ListSarapanState extends State<ListSarapan> {
                                 result?[i].nutrition?.nutrients?[0].amount ?? 0,
                             carb:
                                 result?[i].nutrition?.nutrients?[2].amount ?? 0,
+                            breakfastValue: sarapanValue ?? 0,
+                            lunchValue: makanSiangValue ?? 0,
+                            dinnerValue: makanMalamValue ?? 0,
+                            snackValue: camilanValue ?? 0,
+                            carbMax: carbMax ?? 0,
+                            fatMax: fatMax ?? 0,
+                            nutrisiCal: nutrisiCal ?? 0,
+                            nutrisiFat: nutrisiFat ?? 0,
+                            nutrisiCarb: nutrisiCarb ?? 0,
+                            idToken: widget.idToken,
+                            userId: widget.userId,
                           );
                         },
                       ),
@@ -135,8 +185,11 @@ class _ListSarapanState extends State<ListSarapan> {
 
   Future<void> _pullRefresh() async {
     setState(() {
-      Provider.of<ViewRekomendasi>(context, listen: false)
-          .fetchBreakfast(widget.maxCarb, widget.maxFat, widget.maxCalories);
+      Provider.of<ViewRekomendasi>(context, listen: false).fetchBreakfast(
+        nutrisiCarb ?? 0,
+        nutrisiFat ?? 0,
+        nutrisiCal ?? 0,
+      );
     });
   }
 }

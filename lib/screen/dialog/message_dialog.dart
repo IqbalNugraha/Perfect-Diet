@@ -736,7 +736,24 @@ class _DialogPolaMakanState extends State<DialogPolaMakan> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              logicRekomendasi.sendLunch(
+                widget.title,
+                widget.imgUrl,
+                widget.calValue,
+                widget.fatValue,
+                widget.carbValue,
+                widget.lunchValue,
+                widget.fatMax,
+                widget.carbMax,
+                widget.nutrisiCal,
+                widget.nutrisiFat,
+                widget.nutrisiCarb,
+                widget.userId,
+                widget.idToken,
+                context,
+              );
+            },
             child: Container(
               width: size.width,
               height: 50,
@@ -758,7 +775,24 @@ class _DialogPolaMakanState extends State<DialogPolaMakan> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              logicRekomendasi.sendDinner(
+                widget.title,
+                widget.imgUrl,
+                widget.calValue,
+                widget.fatValue,
+                widget.carbValue,
+                widget.dinnerValue,
+                widget.fatMax,
+                widget.carbMax,
+                widget.nutrisiCal,
+                widget.nutrisiFat,
+                widget.nutrisiCarb,
+                widget.userId,
+                widget.idToken,
+                context,
+              );
+            },
             child: Container(
               width: size.width,
               height: 50,
@@ -780,7 +814,24 @@ class _DialogPolaMakanState extends State<DialogPolaMakan> {
           ),
           const SizedBox(height: 16),
           GestureDetector(
-            onTap: () {},
+            onTap: () {
+              logicRekomendasi.sendBreakfast(
+                widget.title,
+                widget.imgUrl,
+                widget.calValue,
+                widget.fatValue,
+                widget.carbValue,
+                widget.dinnerValue,
+                widget.fatMax,
+                widget.carbMax,
+                widget.nutrisiCal,
+                widget.nutrisiFat,
+                widget.nutrisiCarb,
+                widget.userId,
+                widget.idToken,
+                context,
+              );
+            },
             child: Container(
               width: size.width,
               height: 50,

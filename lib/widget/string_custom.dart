@@ -9,6 +9,13 @@ class StringCustom {
     "Aktivitas Berat",
   ];
 
+  List<String> targetHari = [
+    "7 Hari",
+    "14 Hari",
+    "21 Hari",
+    "28 Hari",
+  ];
+
   List<String> rekomendasiDiet = [
     "Ketegonik",
     "Bebas Gula",

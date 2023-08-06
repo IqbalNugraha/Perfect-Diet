@@ -85,8 +85,9 @@ class ViewCamera with ChangeNotifier {
     try {
       changeState(ClassViewCamera.loading);
       final url = Uri.parse(
-        "$recommendation?apiKey=$apiKey1&query=$query&maxCarbs=$maxCarb&maxCalories=$maxCal&maxFat=$maxFat&number=1&sort=popular&sortDirection=asc",
+        "$recommendation?apiKey=$apiKey1&query=$query&maxCarbs=$maxCarb&maxCalories=$maxCal&maxFat=$maxFat&number=1",
       );
+      print(url);
       final response = await http.get(url);
       log(response.body);
       if (response.statusCode == 200) {

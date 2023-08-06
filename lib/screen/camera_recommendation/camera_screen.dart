@@ -41,8 +41,9 @@ class _CameraScreenState extends State<CameraScreen> {
       lemak,
       karbo,
       maxCal,
-      maxFat,
-      maxCarb,
+      recentCal,
+      recentFat,
+      recentCarb,
       id,
       calValue,
       fatValue,
@@ -64,7 +65,9 @@ class _CameraScreenState extends State<CameraScreen> {
       nutrisiCal,
       nutrisiCarb,
       nutrisiFat,
-      accuracy;
+      accuracy,
+      totalCarb,
+      totalFat;
   List<String>? dishType;
   List<RekomendasiBreakfast>? result;
   bool isCamera = false;
@@ -77,83 +80,88 @@ class _CameraScreenState extends State<CameraScreen> {
     isNutrisi = true;
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       Provider.of<ViewPolaMakan>(context, listen: false)
-          .fetchNutrisiPolaMakan(
-        widget.userId,
-        widget.idToken,
-      )
+          .fetchTablePolaMakan(widget.userId, widget.idToken)
           .then((value) {
         setState(() {
-          nutrisiCal = value.cal;
-          nutrisiFat = value.fat;
-          nutrisiCarb = value.carb;
-        });
-        Provider.of<ViewTargetProfile>(context, listen: false)
-            .fetchTarget(widget.userId, widget.idToken)
-            .then((value) {
-          maxCal = ((value.caloriesDiet ?? 0).toInt()) - (nutrisiCal ?? 0);
-          maxFat = ((value.fat ?? 0).toInt()) - (nutrisiFat ?? 0);
-          maxCarb = ((value.carb ?? 0).toInt()) - (nutrisiCarb ?? 0);
-          openCamera().then((value) {
+          sarapanValue = value.sarapan;
+          makanSiangValue = value.makanSiang;
+          makanMalamValue = value.makanMalam;
+          camilanValue = value.ngemil;
+          totalFat = value.fat;
+          totalCarb = value.carb;
+          isNutrisi = false;
+          Provider.of<ViewPolaMakan>(context, listen: false)
+              .fetchNutrisiPolaMakan(
+            widget.userId,
+            widget.idToken,
+          )
+              .then((value) {
             setState(() {
-              isLoading = false;
-            });
-            Provider.of<ViewCamera>(context, listen: false)
-                .recogImage(base64Image ?? "")
-                .then((value) {
-              setState(() {
-                name = value.outputs?[0].data?.concepts?[0].name;
-                accuracy =
-                    (((value.outputs?[0].data?.concepts?[0].value ?? 0)) * 100)
-                        .toInt();
+              nutrisiCal = value.cal;
+              nutrisiFat = value.fat;
+              nutrisiCarb = value.carb;
+              recentCal = (((sarapanValue ?? 0) +
+                      (makanSiangValue ?? 0) +
+                      (makanMalamValue ?? 0)) -
+                  (nutrisiCal ?? 0));
+              recentFat = (totalFat ?? 0) - (nutrisiFat ?? 0);
+              recentCarb = (totalCarb ?? 0) - (nutrisiCarb ?? 0);
+              openCamera().then((value) {
+                setState(() {
+                  isLoading = false;
+                });
                 Provider.of<ViewCamera>(context, listen: false)
-                    .getDataFood(
-                  name ?? '',
-                  maxCal ?? 0,
-                  maxFat ?? 0,
-                  maxCarb ?? 0,
-                )
+                    .recogImage(base64Image ?? "")
                     .then((value) {
                   setState(() {
-                    calValue = value.result?[0].nutrition?.nutrients?[0].amount
-                        ?.toInt();
-                    fatValue = value.result?[0].nutrition?.nutrients?[1].amount
-                        ?.toInt();
-                    carbValue = value.result?[0].nutrition?.nutrients?[2].amount
-                        ?.toInt();
-                    Future.delayed(const Duration(seconds: 2), () {
-                      Provider.of<ViewHistory>(context, listen: false)
-                          .sendHistory(
+                    name = value.outputs?[0].data?.concepts?[0].name;
+                    accuracy =
+                        (((value.outputs?[0].data?.concepts?[0].value ?? 0)) *
+                                100)
+                            .toInt();
+                    Provider.of<ViewCamera>(context, listen: false)
+                        .getDataFood(
+                      name ?? '',
+                      recentCal ?? 0,
+                      recentFat ?? 0,
+                      recentCarb ?? 0,
+                    )
+                        .then((value) {
+                      setState(() {
+                        calValue = value
+                            .result?[0].nutrition?.nutrients?[0].amount
+                            ?.toInt();
+                        fatValue = value
+                            .result?[0].nutrition?.nutrients?[1].amount
+                            ?.toInt();
+                        carbValue = value
+                            .result?[0].nutrition?.nutrients?[2].amount
+                            ?.toInt();
+                        Future.delayed(const Duration(seconds: 2), () {
+                          Provider.of<ViewHistory>(context, listen: false)
+                              .sendHistory(
+                            name ?? "",
+                            calValue ?? 0,
+                            fatValue ?? 0,
+                            carbValue ?? 0,
+                            base64Image ?? "",
+                            widget.userId,
+                            widget.idToken,
+                          );
+                        });
+                      });
+                      Provider.of<ViewRekomendasi>(context, listen: false)
+                          .fetchSearch(
+                        recentCarb ?? 0,
+                        recentFat ?? 0,
+                        recentCal ?? 0,
                         name ?? "",
-                        calValue ?? 0,
-                        fatValue ?? 0,
-                        carbValue ?? 0,
-                        base64Image ?? "",
-                        widget.userId,
-                        widget.idToken,
-                      );
-                    });
-                  });
-                  Provider.of<ViewRekomendasi>(context, listen: false)
-                      .fetchSearch(
-                    maxCarb ?? 0,
-                    maxFat ?? 0,
-                    maxCal ?? 0,
-                    name ?? "",
-                  )
-                      .then((value) {
-                    setState(() {
-                      result = value.result;
-                    });
-                  });
-                  Provider.of<ViewPolaMakan>(context, listen: false)
-                      .fetchTablePolaMakan(widget.userId, widget.idToken)
-                      .then((value) {
-                    setState(() {
-                      sarapanValue = value.sarapan;
-                      makanSiangValue = value.makanSiang;
-                      makanMalamValue = value.makanMalam;
-                      camilanValue = value.ngemil;
-                      isNutrisi = false;
+                      )
+                          .then((value) {
+                        setState(() {
+                          result = value.result;
+                        });
+                      });
                     });
                   });
                 });
@@ -184,7 +192,6 @@ class _CameraScreenState extends State<CameraScreen> {
         base64Image = base64Encode(imageBytes);
         imagePicker = File(file.path);
         isCamera = false;
-        print("isCamera : $isCamera");
       });
     } else {
       setState(() {
@@ -294,8 +301,8 @@ class _CameraScreenState extends State<CameraScreen> {
                                               makanMalamValue:
                                                   makanMalamValue ?? 0,
                                               camilanValue: camilanValue ?? 0,
-                                              fatMax: maxFat ?? 0,
-                                              carbMax: maxCarb ?? 0,
+                                              fatMax: recentFat ?? 0,
+                                              carbMax: recentCarb ?? 0,
                                               ngemil: ngemil ?? 0,
                                               nutrisiCal: nutrisiCal ?? 0,
                                               nutrisiFat: nutrisiFat ?? 0,
@@ -341,6 +348,24 @@ class _CameraScreenState extends State<CameraScreen> {
                                                           .nutrition!
                                                           .nutrients![2]
                                                           .amount!,
+                                                      breakfastValue:
+                                                          sarapanValue ?? 0,
+                                                      lunchValue:
+                                                          makanSiangValue ?? 0,
+                                                      dinnerValue:
+                                                          makanMalamValue ?? 0,
+                                                      snackValue:
+                                                          camilanValue ?? 0,
+                                                      carbMax: totalCarb ?? 0,
+                                                      fatMax: totalFat ?? 0,
+                                                      nutrisiCal:
+                                                          nutrisiCal ?? 0,
+                                                      nutrisiFat:
+                                                          nutrisiFat ?? 0,
+                                                      nutrisiCarb:
+                                                          nutrisiCarb ?? 0,
+                                                      idToken: widget.idToken,
+                                                      userId: widget.userId,
                                                     ),
                                                   );
                                                 },
